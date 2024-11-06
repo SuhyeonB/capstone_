@@ -25,11 +25,10 @@ public class JwtUtil {
         return new SecretKeySpec(keyBytes, SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String generateToken(Long userId, String loginType, String provider) {
+    public String generateToken(Long userId, String loginType) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("loginType", loginType);
-        claims.put("provider",provider);
 
         return Jwts.builder()
                 .setClaims(claims)

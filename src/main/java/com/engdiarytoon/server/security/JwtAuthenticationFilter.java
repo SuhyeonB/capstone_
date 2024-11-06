@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // Generate new access token and send it in the response body
                     Long userId = Long.valueOf(claims.getSubject());
-                    String newAccessToken = jwtUtil.generateToken(userId, "BASIC", null);
+                    String newAccessToken = jwtUtil.generateToken(userId, "BASIC");
 
                     response.setContentType("application/json");
                     response.setCharacterEncoding("UTF-8");

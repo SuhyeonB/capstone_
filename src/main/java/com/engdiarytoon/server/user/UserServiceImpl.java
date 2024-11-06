@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,31 +18,23 @@ public class UserServiceImpl implements UserService{
     private final BCryptPasswordEncoder passwordEncoder;
     private final Map<String, String> verificationCodes = new HashMap<>();
     private final JwtUtil jwtUtil;
+    private final KakaoApi kakaoApi;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil, KakaoApi kakaoApi) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.kakaoApi = kakaoApi;
     }
 
     @Override
-    public String sendVeriticationCode(String email) {
-        // check if email already exists : 이메일 중복 체크
-        if (userRepository.existsByEmail(email)) {
-            return "Email already exists";
-        }
-        // generate a random 4-digit verification code
-        String code = String.format("%04d", new Random().nextInt(9999));
-        // Store the code associated with the email
-        verificationCodes.put(email, code);
-        // I'll add Sending email (SMTP) later
-        //System.out.println("email = " + email + " code : " + code);
-        // return the code for front-end usage
-        return code;
+    public boolean isEmailRegistered(String email) {
+        return userRepository.existsByEmail(email);
     }
 
     @Override
+    @Transactional
     public User signup(String name, String email, String password) {
         String hashedPassword = passwordEncoder.encode(password);
 
@@ -86,7 +79,7 @@ public class UserServiceImpl implements UserService{
         }
 
         // Success case: Generate JWT tokens
-        String accessToken = jwtUtil.generateToken(user.get().getUserId(), "BASIC", null);
+        String accessToken = jwtUtil.generateToken(user.get().getUserId(), "BASIC");
         String refreshToken = jwtUtil.generateRefreshToken(user.get().getUserId());
 
         response.put("status", "Success");
@@ -103,6 +96,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long userId) {
         Optional<User> user = userRepository.findByUserId(userId);
         if (user.isPresent()) {
@@ -114,4 +108,58 @@ public class UserServiceImpl implements UserService{
             throw new IllegalStateException("User not found with userId: " + userId);
         }
     }
+
+    @Override
+    @Transactional
+    public void updateUser(Long userId, Map<String, Object> updates) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (updates.containsKey("name")) user.setName((String) updates.get("name"));
+        if (updates.containsKey("password")) {// update Password
+            String hashedPassword = passwordEncoder.encode((String) updates.get("password"));
+            user.setPassword(hashedPassword);
+        }
+
+        userRepository.save(user);
+    }
+
+    private Map<String, Object> generateTokens(User user) {
+        Map<String, Object> tokens = new HashMap<>();
+        tokens.put("accessToken", jwtUtil.generateToken(user.getUserId(), "SNS"));
+        tokens.put("refreshToken", jwtUtil.generateRefreshToken(user.getUserId()));
+        return tokens;
+    }
+
+    /* Kakao */
+    @Override
+    public Map<String, Object> kakaoLogin(String authorizationCode) {
+        try {
+            // 1. Request access token from kakao
+            String kakaoAccessToken = kakaoApi.getAccessToken(authorizationCode);
+
+            // 2. fetch user info
+            KakaoUser kakaoUser = kakaoApi.getUserInfo(kakaoAccessToken);
+
+            // 3. check if user already exists in the database
+            Optional<User> existingUser = userRepository.findByEmail(kakaoUser.getEmail());
+            if(existingUser.isPresent()) {
+                return generateTokens(existingUser.get());
+            } else {
+                // 4. not exist, register new user in the database
+                User newUser = User.builder()
+                        .name(kakaoUser.getNickname())
+                        .email(kakaoUser.getEmail())
+                        .oauthProvider("KAKAO")
+                        .role(Role.USER)
+                        .build();
+                userRepository.save(newUser);
+                return generateTokens(newUser);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to log in with Kakao", e);
+        }
+    }
+
+
 }

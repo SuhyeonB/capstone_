@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -16,12 +15,6 @@ public class UserController {
     @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
-    }
-
-    @PostMapping("/send-email")
-    public String sendVerificationCode(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        return userService.sendVeriticationCode(email);
     }
 
     @PostMapping
@@ -65,4 +58,11 @@ public class UserController {
         userService.deleteUser(userId);
         return ResponseEntity.ok("User deleted successfully");
     }
+
+    @PatchMapping("/{user_id}")
+    public ResponseEntity<String> updateUser(@PathVariable Long user_id, @RequestBody Map<String, Object> updates) {
+        userService.updateUser(user_id, updates);
+        return ResponseEntity.ok("User updated successfully");
+    }
+
 }

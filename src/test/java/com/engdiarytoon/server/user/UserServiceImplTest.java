@@ -118,7 +118,7 @@ class UserServiceImplTest {
         // given
         when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("password", testUser.getPassword())).thenReturn(true);
-        when(jwtUtil.generateToken(1L, "BASIC", null)).thenReturn("accessToken");
+        when(jwtUtil.generateToken(1L, "BASIC")).thenReturn("accessToken");
         when(jwtUtil.generateRefreshToken(1L)).thenReturn("refreshToken");
 
         // when
