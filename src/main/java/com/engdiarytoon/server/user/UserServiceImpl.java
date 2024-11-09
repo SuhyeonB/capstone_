@@ -161,5 +161,8 @@ public class UserServiceImpl implements UserService{
         }
     }
 
-
+    @Override
+    public Map<String, Object> googleLogin(String authorizationCode) {
+        return null;
+    }
 }

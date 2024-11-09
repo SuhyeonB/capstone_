@@ -11,4 +11,5 @@ public interface UserService {
     void deleteUser(Long userId);
     void updateUser(Long userId, Map<String, Object> updates);
     Map<String, Object> kakaoLogin(String authorizationCode);
+    Map<String, Object> googleLogin(String authorizationCode);
 }
