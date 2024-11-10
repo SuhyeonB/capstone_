@@ -1,4 +1,2 @@
-package com.engdiarytoon.server.post;
-
-public class PostRepository {
+package com.engdiarytoon.server.post;public interface PostRepository {
 }
