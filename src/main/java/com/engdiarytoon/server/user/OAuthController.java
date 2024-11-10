@@ -19,17 +19,6 @@ public class OAuthController {
         this.userService = userService;
     }
 
-    /* Google */
-    @PostMapping("/signin/google")
-    public ResponseEntity<?> googleCallback(@RequestParam String code) {
-        try {
-            Map<String, Object> result = userService.googleLogin(code);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to login with Google");
-        }
-    }
-
     /* Kakao */
     @PostMapping("/signin/kakao")
     public ResponseEntity<?> kakaoCallback(@RequestParam String code) {

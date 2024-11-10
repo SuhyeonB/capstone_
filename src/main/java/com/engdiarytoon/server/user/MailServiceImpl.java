@@ -1,6 +1,7 @@
 package com.engdiarytoon.server.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -15,7 +16,7 @@ public class MailServiceImpl implements MailService{
     private final RedisTemplate<String, String> redisTemplate;
 
     @Autowired
-    public MailServiceImpl(JavaMailSender mailSender, RedisTemplate<String, String> redisTemplate) {
+    public MailServiceImpl(JavaMailSender mailSender, @Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate) {
         this.mailSender = mailSender;
         this.redisTemplate = redisTemplate;
     }

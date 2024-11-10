@@ -67,7 +67,7 @@ public class JwtUtil {
         return claims.getExpiration().before(new Date());
     }
 
-    // necessary....?
+
     public boolean isRefreshToken(Claims claims) {  // RefreshToken 일 때, true 반환
         return !claims.containsKey("loginType");
     }
