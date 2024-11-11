@@ -2,13 +2,12 @@ package com.engdiarytoon.server.post;
 
 import com.engdiarytoon.server.like.LikeService;
 import com.engdiarytoon.server.user.User;
-import com.engdiarytoon.server.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -27,14 +26,38 @@ public class PostController {
     }
 
     @PostMapping
-    public ResponseEntity<Post> createPost(@RequestBody Map<String, Object> request, @AuthenticationPrincipal User writer) {
-        String title = (String)  request.get("title");
-        String content = (String)  request.get("content");
-        Boolean isPublic = (Boolean)  request.get("isPublic");
-        String weather = (String)  request.get("weather");
+    public ResponseEntity<PostResponse> createPost(
+            @RequestParam("title") String title,
+            @RequestParam("content") String content,
+            @RequestParam("isPublic") Boolean isPublic,
+            @RequestParam("weather") String weather,
+            @RequestParam(value = "image", required = false) MultipartFile image,
+            @AuthenticationPrincipal User writer) {
 
-        Post post = postService.createPost(title, content, writer.getUserId(), isPublic, weather);
-        return new ResponseEntity<>(post, HttpStatus.CREATED);
+        // Handle image upload if an image is provided
+        String imageUrl = null;
+        if (image != null && !image.isEmpty()) {
+            imageUrl = postService.storeImage(image);
+        }
+
+        // Create the post with optional image URL
+        Post post = postService.createPost(title, content, writer.getUserId(), isPublic, weather, imageUrl);
+        int likeCount = likeService.getLikeCount(post);
+
+        // Convert Post to PostResponse
+        PostResponse response = new PostResponse(
+                post.getPostId(),
+                post.getTitle(),
+                post.getContent(),
+                post.getWriter().getUserId(),
+                post.getIsPublic(),
+                post.getWeather(),
+                post.getCreatedAt(),
+                likeCount,
+                post.getImageUrl()
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/user/{userId}")
@@ -49,7 +72,8 @@ public class PostController {
                         post.getIsPublic(),
                         post.getWeather(),
                         post.getCreatedAt(),
-                        likeService.getLikeCount(post)  // Get like count for each post
+                        likeService.getLikeCount(post),  // Get like count for each post
+                        post.getImageUrl()
                 ))
                 .collect(Collectors.toList());
 
@@ -69,7 +93,28 @@ public class PostController {
                         post.getIsPublic(),
                         post.getWeather(),
                         post.getCreatedAt(),
-                        likeService.getLikeCount(post)  // Get like count for each post
+                        likeService.getLikeCount(post),  // Get like count for each post
+                        post.getImageUrl()
+                ))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/likeCount")
+    public ResponseEntity<List<PostResponse>> findAllWithLikeCount() {
+        List<Post> posts = postService.findTopPostsByCriteria("likeCount");
+        List<PostResponse> responses = posts.stream()
+                .map(post -> new PostResponse(
+                        post.getPostId(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getWriter().getUserId(),
+                        post.getIsPublic(),
+                        post.getWeather(),
+                        post.getCreatedAt(),
+                        likeService.getLikeCount(post),
+                        post.getImageUrl()
                 ))
                 .collect(Collectors.toList());
 
@@ -91,7 +136,8 @@ public class PostController {
                 post.getIsPublic(),
                 post.getWeather(),
                 post.getCreatedAt(),
-                likeCount
+                likeCount,
+                post.getImageUrl()
         );
 
         return ResponseEntity.ok(response);
