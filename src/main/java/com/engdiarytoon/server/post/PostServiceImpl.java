@@ -27,7 +27,8 @@ public class PostServiceImpl implements PostService{
 
     private final LikeService likeService;
 
-    private final Path imageStoragePath = Paths.get("/uploads/images");
+    private final Path imageStoragePath = Paths.get("src/main/resources/static/images");
+
 
     @Autowired
     public PostServiceImpl(UserRepository userRepository, PostRepository postRepository, LikeService likeService) {
@@ -105,12 +106,18 @@ public class PostServiceImpl implements PostService{
 
     @Override
     public String storeImage(MultipartFile image) {
-        String filename = UUID.randomUUID().toString() + "." + getExtension(image.getOriginalFilename());
+        if (image == null || image.isEmpty()) {
+            return null;
+        }
 
         try {
+            String filename = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
             Path destinationPath = imageStoragePath.resolve(filename).normalize();
-            image.transferTo(destinationPath.toFile());
-            return "/uploads/images/" + filename;
+
+            Files.createDirectories(destinationPath.getParent()); // 경로가 없을 경우 생성
+            Files.write(destinationPath, image.getBytes());
+
+            return "/uploads/images/" + filename; // URL 반환
         } catch (IOException e) {
             throw new RuntimeException("Failed to store image file.", e);
         }
@@ -118,14 +125,12 @@ public class PostServiceImpl implements PostService{
 
     private void deleteImageFile(String imageUrl) {
         try {
-            Path imagePath = Paths.get("uploads/images").resolve(imageUrl).normalize();
-            Files.deleteIfExists(imagePath);
+            String fileName = imageUrl.replace("/uploads/images/", "");
+            Path imagePath = imageStoragePath.resolve(fileName).normalize();
+
+            Files.deleteIfExists(imagePath); // 파일 삭제
         } catch (IOException e) {
             throw new RuntimeException("Failed to delete image file: " + imageUrl, e);
         }
-    }
-
-    private String getExtension(String filename) {
-        return filename != null && filename.contains(".") ? filename.substring(filename.lastIndexOf('.') + 1) : "";
     }
 }

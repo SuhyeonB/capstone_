@@ -43,6 +43,7 @@ class UserServiceImplTest {
                 .build();
     }
 
+    /*
     @Test
     @DisplayName("회원가입 - 인증코드 생성")
     void makeVeriticationCode() {
@@ -58,7 +59,7 @@ class UserServiceImplTest {
         assertNotNull(code);
         assertEquals(4, code.length(), "Code should be 4 digit long");
         System.out.println("code = " + code);
-    }
+    }*/
 
     @Test
     @DisplayName("회원가입")

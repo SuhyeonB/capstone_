@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -63,5 +64,12 @@ public class HappinessServiceImpl implements HappinessService {
                 .orElseThrow(() -> new IllegalArgumentException("No happiness record found for today to delete."));
 
         happinessRepository.delete(happiness);
+    }
+
+    @Override
+    public List<Happiness> getHappinessForMonth(User user, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month,1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+        return happinessRepository.findByUserAndDateBetween(user, startDate, endDate);
     }
 }

@@ -23,6 +23,7 @@ public class MailServiceImpl implements MailService{
 
     @Override
     public void sendVerificationEmail(String email) {
+        System.out.println("service impl: sending email: "+ email);
 
         // generate a random 4-digit verification code
         String code = String.format("%04d", new Random().nextInt(9999));
@@ -40,5 +41,14 @@ public class MailServiceImpl implements MailService{
     public boolean verifyCode(String email, String code) {
         String storedCode = redisTemplate.opsForValue().get(email);
         return code.equals(storedCode);
+    }
+
+    @Override
+    public void sendNewPassword(String email, String subject, String newPassword) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject(subject);
+        message.setText("Your new password is: " + newPassword + "\nPlease change it immediately after logging in.");
+        mailSender.send(message);
     }
 }

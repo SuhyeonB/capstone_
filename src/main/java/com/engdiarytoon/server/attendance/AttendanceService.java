@@ -10,7 +10,7 @@ public interface AttendanceService {
     Attendance markAttendance(User user);
 
     // Get attendance history for a user
-    List<Attendance> getAttendanceHistory(User user);
+    List<Attendance> getAttendanceHistory(User user, int year, int month);
 
     // Check if user has already marked attendance for today
     boolean isAttendanceMarkedToday(User user);

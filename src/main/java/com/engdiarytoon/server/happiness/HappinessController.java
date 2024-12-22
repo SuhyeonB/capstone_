@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,7 +22,6 @@ public class HappinessController {
         this.happinessService = happinessService;
     }
 
-    // Record today's happiness score
     @PostMapping
     public ResponseEntity<Happiness> recordHappiness(@AuthenticationPrincipal User user, @RequestBody Map<String, Float> request) {
         Float value = request.get("value");
@@ -54,7 +54,7 @@ public class HappinessController {
     }
 
     // Retrieve today's happiness score
-    @GetMapping
+    @GetMapping("/today")
     public ResponseEntity<Happiness> getTodayHappiness(@AuthenticationPrincipal User user) {
         Optional<Happiness> happiness = happinessService.getTodayHappiness(user);
         return happiness.map(ResponseEntity::ok)
@@ -70,5 +70,13 @@ public class HappinessController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<List<Happiness>> getMonthHappiness(
+            @AuthenticationPrincipal User user,
+            @RequestParam("year") int year, @RequestParam("month") int month) {
+        List<Happiness> happinessList = happinessService.getHappinessForMonth(user, year, month);
+        return ResponseEntity.ok(happinessList);
     }
 }

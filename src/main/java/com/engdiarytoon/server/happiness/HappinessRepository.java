@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -12,4 +13,6 @@ public interface HappinessRepository extends JpaRepository<Happiness, Long> {
 
     // Find today's happiness record for a specific user
     Optional<Happiness> findByUserAndDate(User user, LocalDate date);
+
+    List<Happiness> findByUserAndDateBetween(User user, LocalDate startDate, LocalDate endDate);
 }

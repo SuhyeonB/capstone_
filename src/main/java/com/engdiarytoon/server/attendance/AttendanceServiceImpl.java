@@ -36,8 +36,12 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public List<Attendance> getAttendanceHistory(User user) {
-        return attendanceRepository.findByUser(user);
+    public List<Attendance> getAttendanceHistory(User user, int year, int month)
+    {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        return attendanceRepository.findByUserAndDateBetween(user, startDate, endDate);
     }
 
     @Override

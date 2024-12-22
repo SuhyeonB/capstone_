@@ -53,6 +53,17 @@ public class UserController {
         }
     }
 
+    @PostMapping("/signout")
+    public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
+        try {
+            Long userId = Long.valueOf(request.get("userId"));
+            userService.signout(userId);
+            return ResponseEntity.ok("Logged out successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed");
+        }
+    }
+
     @DeleteMapping("/{userId}")
     public ResponseEntity<String> deleteUser(@PathVariable Long userId) {
         userService.deleteUser(userId);
@@ -65,4 +76,17 @@ public class UserController {
         return ResponseEntity.ok("User updated successfully");
     }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+
+        try {
+            userService.resetPassword(email);
+            return ResponseEntity.ok("A new password has been sent to your email.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while resetting the password.");
+        }
+    }
 }

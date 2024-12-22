@@ -5,10 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -28,7 +25,7 @@ public class AttendanceController {
     public ResponseEntity<String> markAttendance(@AuthenticationPrincipal User user) {
         try {
             attendanceService.markAttendance(user);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Attendance marked successfully for today.");
+            return ResponseEntity.ok("Success");
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Attendance already marked for today.");
         }
@@ -36,8 +33,10 @@ public class AttendanceController {
 
     // Get attendance history for the authenticated user
     @GetMapping("/history")
-    public ResponseEntity<List<Attendance>> getAttendanceHistory(@AuthenticationPrincipal User user) {
-        List<Attendance> attendanceHistory = attendanceService.getAttendanceHistory(user);
+    public ResponseEntity<List<Attendance>> getAttendanceHistory(
+            @AuthenticationPrincipal User user,
+            @RequestParam("year") int year, @RequestParam("month") int month) {
+        List<Attendance> attendanceHistory = attendanceService.getAttendanceHistory(user, year, month);
         return ResponseEntity.ok(attendanceHistory);
     }
 }

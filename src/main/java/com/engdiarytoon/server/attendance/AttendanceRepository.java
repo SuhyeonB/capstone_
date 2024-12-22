@@ -13,6 +13,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     // Find attendance records for a specific user
     List<Attendance> findByUser(User user);
+    List<Attendance> findByUserAndDateBetween(User user, LocalDate startDate, LocalDate endDate);
 
     // Find attendance by user and date (to check if attendance exists for today)
     Optional<Attendance> findByUserAndDate(User user, LocalDate date);

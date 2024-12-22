@@ -10,6 +10,7 @@ public interface UserService {
     void signout(Long userId);
     void deleteUser(Long userId);
     void updateUser(Long userId, Map<String, Object> updates);
+    void resetPassword(String email);
     Map<String, Object> kakaoLogin(String authorizationCode);
     Map<String, Object> googleLogin(String authorizationCode);
 }

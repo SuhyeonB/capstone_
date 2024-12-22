@@ -1,6 +1,7 @@
 package com.engdiarytoon.server.user;
 
-import io.jsonwebtoken.Claims;
+
+import com.engdiarytoon.server.util.PasswordGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,14 +17,15 @@ public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final Map<String, String> verificationCodes = new HashMap<>();
+    private final MailService mailService;
     private final JwtUtil jwtUtil;
     private final KakaoApi kakaoApi;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil, KakaoApi kakaoApi) {
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, MailService mailService,JwtUtil jwtUtil, KakaoApi kakaoApi) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.mailService = mailService;
         this.jwtUtil = jwtUtil;
         this.kakaoApi = kakaoApi;
     }
@@ -81,10 +83,13 @@ public class UserServiceImpl implements UserService{
         // Success case: Generate JWT tokens
         String accessToken = jwtUtil.generateToken(user.get().getUserId(), "BASIC");
         String refreshToken = jwtUtil.generateRefreshToken(user.get().getUserId());
+        jwtUtil.storeRefreshToken(user.get().getUserId(), refreshToken);
 
         response.put("status", "Success");
         response.put("accessToken", accessToken);
         response.put("refreshToken", refreshToken);
+        response.put("userId", user.get().getUserId());
+        response.put("username", user.get().getName());
 
         return response;
     }
@@ -92,7 +97,7 @@ public class UserServiceImpl implements UserService{
     @Override
     public void signout(Long userId)
     {
-        // signout logic (invalidate tokens if necessary)
+        jwtUtil.removeRefreshToken(userId);
     }
 
     @Override
@@ -164,5 +169,20 @@ public class UserServiceImpl implements UserService{
     @Override
     public Map<String, Object> googleLogin(String authorizationCode) {
         return null;
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User with email" + email + "not found"));
+
+        String newPassword = PasswordGenerator.generateRandomPassword();
+        String encodedPassword = passwordEncoder.encode(newPassword);
+
+        user.setPassword(encodedPassword);
+        userRepository.save(user);
+
+        mailService.sendNewPassword(user.getEmail(), "Your New Password", newPassword);
     }
 }

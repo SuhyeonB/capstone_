@@ -26,38 +26,65 @@ public class PostController {
     }
 
     @PostMapping
-    public ResponseEntity<PostResponse> createPost(
+    public ResponseEntity<String> createPost(
             @RequestParam("title") String title,
             @RequestParam("content") String content,
             @RequestParam("isPublic") Boolean isPublic,
             @RequestParam("weather") String weather,
             @RequestParam(value = "image", required = false) MultipartFile image,
-            @AuthenticationPrincipal User writer) {
+            @AuthenticationPrincipal Long writerId) { // userId를 SecurityContext에서 가져옴
 
-        // Handle image upload if an image is provided
-        String imageUrl = null;
-        if (image != null && !image.isEmpty()) {
-            imageUrl = postService.storeImage(image);
+        try{
+            String imageUrl = null;
+            if (image != null && !image.isEmpty()) {
+                imageUrl = postService.storeImage(image);
+            }
+            Post post = postService.createPost(title, content, writerId, isPublic, weather, imageUrl);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Post created successfully");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create post");
+        }
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity<Post> updatePost(
+            @PathVariable Long postId,
+            @RequestBody Map<String, String> updates,
+            @AuthenticationPrincipal Long writerId) {
+
+        // 게시물 작성자인지 검증
+        Post post = postService.getPostById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        if (!post.getWriter().getUserId().equals(writerId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 Forbidden
         }
 
-        // Create the post with optional image URL
-        Post post = postService.createPost(title, content, writer.getUserId(), isPublic, weather, imageUrl);
-        int likeCount = likeService.getLikeCount(post);
+        // 게시물 업데이트
+        String title = updates.get("title");
+        String content = updates.get("content");
+        Post updatedPost = postService.updatePost(postId, title, content);
 
-        // Convert Post to PostResponse
-        PostResponse response = new PostResponse(
-                post.getPostId(),
-                post.getTitle(),
-                post.getContent(),
-                post.getWriter().getUserId(),
-                post.getIsPublic(),
-                post.getWeather(),
-                post.getCreatedAt(),
-                likeCount,
-                post.getImageUrl()
-        );
+        return ResponseEntity.ok(updatedPost);
+    }
 
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal Long writerId) {
+
+        // 게시물 작성자인지 검증
+        Post post = postService.getPostById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        if (!post.getWriter().getUserId().equals(writerId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 Forbidden
+        }
+
+        // 게시물 삭제
+        postService.deletePost(postId);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/user/{userId}")
@@ -101,7 +128,7 @@ public class PostController {
         return ResponseEntity.ok(responses);
     }
 
-    @GetMapping("/likeCount")
+    @GetMapping("/public/like-counts")
     public ResponseEntity<List<PostResponse>> findAllWithLikeCount() {
         List<Post> posts = postService.findTopPostsByCriteria("likeCount");
         List<PostResponse> responses = posts.stream()
@@ -141,22 +168,5 @@ public class PostController {
         );
 
         return ResponseEntity.ok(response);
-    }
-
-    // Update a post (only the author can update)
-    @PutMapping("/{postId}")
-    public ResponseEntity<Post> updatePost(@PathVariable Long postId, @RequestBody Map<String, String> updates, @AuthenticationPrincipal User writer) {
-        String title = updates.get("title");
-        String content = updates.get("content");
-
-        Post updatedPost = postService.updatePost(postId, title, content);
-        return ResponseEntity.ok(updatedPost);
-    }
-
-    // Delete a post (only the author can delete)
-    @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
-        postService.deletePost(postId);
-        return ResponseEntity.ok().build();
     }
 }

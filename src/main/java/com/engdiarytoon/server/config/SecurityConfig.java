@@ -5,11 +5,10 @@ import com.engdiarytoon.server.user.CustomOAuth2UserService;
 import com.engdiarytoon.server.user.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -30,21 +29,32 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/users/signup", "/api/users/signin", "/api/oauth/**").permitAll()
+                        .requestMatchers("/api/users", "/api/users/signin", "/api/oauth/**",
+                                "/api/emails/send-email", "/api/emails/verify-code",
+                                "/api/assistant/analyze"
+                        ).permitAll()
 
                         // Protected endpoints
                         .requestMatchers("/api/user/{userId}").authenticated()
-
+                        .requestMatchers("/api/oauth/signin/google").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // Add the JWT Authentication filter before the default UsernamePasswordAuthenticationFilter
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
 
-                // Enables OAuth2 login (for Google and Kakao login)
                 .oauth2Login(oauth2 -> oauth2
-                        .defaultSuccessUrl("http://localhost:3000")
-                        .failureUrl("http://localhost:3000/login")
+                        .successHandler((request, response, authentication) -> {
+                            System.out.println("Login Successful: " + authentication.getName());
+                            response.sendRedirect("http://localhost:3000");
+                        })
+                        .failureHandler((request, response, exception) -> {
+                            System.err.println("Login Failed: " + exception.getMessage());
+                            response.sendRedirect("http://localhost:3000/signin");
+                        })
                 );
+
+
 
         return http.build();
     }

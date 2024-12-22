@@ -22,6 +22,7 @@ public class MailController {
         this.userService = userService;
     }
 
+
     @PostMapping("/send-email")
     public ResponseEntity<String> sendVerificationCode(@RequestBody Map<String, String> request) {
         String email = request.get("email");
@@ -40,7 +41,7 @@ public class MailController {
 
         boolean isVerified = mailService.verifyCode(email, code);
         if (isVerified) {
-            return ResponseEntity.ok("Verification successful");
+            return ResponseEntity.ok("success");
         } else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired verification code");
         }
