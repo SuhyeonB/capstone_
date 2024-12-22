@@ -2,7 +2,6 @@ package com.engdiarytoon.server.security;
 
 import com.engdiarytoon.server.user.JwtUtil;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

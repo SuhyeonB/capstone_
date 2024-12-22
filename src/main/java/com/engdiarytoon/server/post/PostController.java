@@ -1,7 +1,6 @@
 package com.engdiarytoon.server.post;
 
 import com.engdiarytoon.server.like.LikeService;
-import com.engdiarytoon.server.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

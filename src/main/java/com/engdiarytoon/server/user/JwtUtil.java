@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.SignatureException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,16 +21,21 @@ import java.util.concurrent.TimeUnit;
 public class JwtUtil {
     private final StringRedisTemplate redisTemplate;
 
-    private final String SECRET_KEY = "englishdiarytoonz+secretkeyXqHY41yu/fdsaegdh";
-    private final long ACCESS_TOKEN_EXP = 3600000;   // 1 hour (1000 * 60 * 60)
-    private final long REFRESH_TOKEN_EXP = 864000000;  // 10 days(1000 * 60 * 60 * 24 * 10)
+    @Value("${jwt.secret.key}")
+    private String secretKey;
+
+    @Value("${jwt.access.token.expiration}")
+    private long accessTokenExp;
+
+    @Value("${jwt.refresh.token.expiration}")
+    private long refreshTokenExp;
 
     public JwtUtil(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
     private Key getSigningKey() {
-        byte[] keyBytes = Base64.getDecoder().decode(SECRET_KEY);
+        byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         return new SecretKeySpec(keyBytes, SignatureAlgorithm.HS256.getJcaName());
     }
 
@@ -41,7 +47,7 @@ public class JwtUtil {
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXP))
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExp))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -50,7 +56,7 @@ public class JwtUtil {
         return Jwts.builder()
                 .setSubject(userId.toString())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXP))
+                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExp))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
